@@ -143,6 +143,7 @@ class HFDecoderModel(DecoderModel, Tunable):
             "revision": model_args.model_revision,
             "use_auth_token": True if model_args.use_auth_token else None,
             "trust_remote_code": model_args.trust_remote_code,
+            "padding_side": "left",
         }
         
         try:

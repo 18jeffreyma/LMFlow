@@ -44,16 +44,16 @@ class PeftTrainer(Trainer):
 
 class PeftSavingCallback(TrainerCallback):
     """ Correctly save PEFT model and not full model """
-    def _save(self, model, folder):
+    def _save(self, model, folder, default_path=""):
         if folder is None:
-            folder = ""
+            folder = default_path
         peft_model_path = os.path.join(folder, "adapter_model")
         model.save_pretrained(peft_model_path)
 
     def on_train_end(self, args: TrainingArguments, state: TrainerState,
             control: TrainerControl, **kwargs):
         """ Save final best model adapter """
-        self._save(kwargs['model'], state.best_model_checkpoint)
+        self._save(kwargs['model'], state.best_model_checkpoint, args.output_dir)
 
     def on_epoch_end(self, args: TrainingArguments, state: TrainerState,
             control: TrainerControl, **kwargs):
