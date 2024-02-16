@@ -814,3 +814,36 @@ class HFDecoderModel(DecoderModel, Tunable):
         Return the backend model.
         """
         return self.backend_model
+
+    def add_adapters(self, adapter_paths: List[Path], weightings: List[float]):
+        """
+        Add adapter to the model.
+        """
+        # https://github.com/huggingface/peft/issues/1045#issue-1956066795
+        
+        assert sum(weightings) == 1.0, "Weightings must sum to 1.0"
+        assert len(adapter_paths) == len(weightings), "Number of adapter paths and weightings must be the same"
+        
+        first_adapter_name = "adapter_0"
+        self.backend_model = PeftModel.from_pretrained(
+            self.backend_model, 
+            adapter_paths[0],
+            adapter_name=first_adapter_name
+        )
+        
+        adapter_names = ['adapter_0']
+        for i, adapter_path in enumerate(adapter_paths[1:]):
+            assert os.path.exists(adapter_path), f"Adapter path {adapter_path} does not exist"
+            adapter_name = f"adapter_{i+1}"
+            adapter_names.append(adapter_name)
+
+            self.backend_model.load_adapter(adapter_path, adapter_name=adapter_name)
+
+        # TODO(jjma): Note that this only supports LoRA. We need to add support for other strategies.
+        self.backend_model.add_weighted_adapter(
+            adapters=adapter_names,
+            weights=weightings,
+            adapter_name="combined",
+            combination_type="svd",
+        )
+        self.backend_model.set_adapter("combined")
